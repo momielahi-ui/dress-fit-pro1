@@ -27,7 +27,7 @@ function LoadingSpinner() {
 
 function Scene({ garmentUrl, autoRotate, controlsRef }: { garmentUrl?: string | null, autoRotate: boolean, controlsRef: any }) {
   // Use a CORS friendly URL for the Avatar
-  const { scene } = useGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avatar/glTF-Binary/Avatar.glb");
+  const { scene } = useGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb");
   
   // Clone scene so multiple mounts don't share identical mutated state
   const clonedScene = scene.clone();
@@ -116,7 +116,7 @@ export const Avatar3DContainer = forwardRef<Avatar3DRef, Avatar3DProps>(
     }));
 
     // Preload the specific GLTF to prevent stuttering
-    useGLTF.preload("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avatar/glTF-Binary/Avatar.glb");
+    useGLTF.preload("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb");
 
     return (
       <div className="w-full h-full relative group">
