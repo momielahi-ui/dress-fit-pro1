@@ -33,8 +33,8 @@ function GarmentMesh({
   // Transform keypoints into anchoring math
   const anchor = useMemo(() => {
     let x = 0;
-    let y = 0;
-    let autoScale = 1;
+    let y = baseHeight ? (baseHeight / 4) : 200; // default chest
+    let autoScale = 2.0; // default larger
 
     if (keypoints && keypoints.length > 0) {
       const lShoulder = keypoints.find((k: any) => k.name === 'left_shoulder');
@@ -54,9 +54,8 @@ function GarmentMesh({
         x = px - (baseWidth / 2);
         y = -(py - (baseHeight / 2)) - (dist * 0.5); // shift down half a shoulder width to center on chest
 
-        // Standardize sizing: say the garment texture is base 300px wide. 
-        // We want it to be about 1.8x the shoulder distance.
-        autoScale = (dist * 1.8) / 300; 
+        // Increase auto-scale significantly because jerseys have wide sleeves
+        autoScale = (dist * 2.8) / 300; 
       }
     }
 
@@ -118,9 +117,9 @@ const WarpGeometry = () => {
         // Bulge chest (parabolic curve outward)
         newZ += (1 - nx * nx) * (1 - ny * ny) * 30;
 
-        // Drape corners down for shoulders
+        // Drape corners down for shoulders (subtle)
         if (ny > 0) {
-          newY -= Math.abs(nx) * 40 * ny; 
+          newY -= Math.abs(nx) * 20 * ny; 
         }
 
         pos.setXYZ(i, x, newY, newZ);
@@ -204,7 +203,7 @@ export function SmartStudio2D({ modelUrl, garmentUrl, scale, widthWarp, posX, po
 
         {/* The 3D Canvas sits precisely over the image, mapping completely 1:1 using absolute positioning */}
         {garmentUrl && imgSize.w > 0 && (
-          <div className="absolute inset-0 z-10 opacity-[0.97]" style={{ mixBlendMode: 'multiply', filter: 'contrast(1.15) brightness(0.95)' }}>
+          <div className="absolute inset-0 z-10 opacity-100">
             <Canvas gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }} orthographic camera={{ position: [0, 0, 100], zoom: 1 }}>
               {/* Match coordinate system perfectly by setting frustum sizes explicitly via ortho config, but it's simpler to just let Drei handle aspect ratio mapping, 
                   Wait, by default Canvas sizes to parent. OrthographicCamera with manual boundaries maps pixels to 3D units 1:1 */}
