@@ -1,164 +1,137 @@
-import { useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { Suspense, useEffect, useImperativeHandle, useRef, forwardRef } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
+import { OrbitControls, Environment, ContactShadows, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { Loader2 } from "lucide-react";
 
-interface MannequinProps {
-  skinColor: string;
-  shirtColor: string;
-  pantsColor: string;
+interface Avatar3DProps {
+  garmentUrl?: string | null;
+  autoRotate?: boolean;
 }
 
-function Mannequin({ skinColor, shirtColor, pantsColor }: MannequinProps) {
-  const groupRef = useRef<THREE.Group>(null);
+export interface Avatar3DRef {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetView: () => void;
+}
 
-  useFrame((_, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.3;
-    }
-  });
+function LoadingSpinner() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 text-muted-foreground z-10 bg-background/50 backdrop-blur-sm">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <span className="text-sm font-medium hover:opacity-100 transition-opacity">Downloading 3D Assets...</span>
+    </div>
+  );
+}
 
-  const skin = new THREE.Color(skinColor);
-  const shirt = new THREE.Color(shirtColor);
-  const pants = new THREE.Color(pantsColor);
+function Scene({ garmentUrl, autoRotate, controlsRef }: { garmentUrl?: string | null, autoRotate: boolean, controlsRef: any }) {
+  // Use a CORS friendly URL for the Avatar
+  const { scene } = useGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avatar/glTF-Binary/Avatar.glb");
+  
+  // Clone scene so multiple mounts don't share identical mutated state
+  const clonedScene = scene.clone();
+
+  useEffect(() => {
+    if (!garmentUrl || !clonedScene) return;
+
+    const loader = new THREE.TextureLoader();
+    loader.load(garmentUrl, (texture) => {
+      // Setup correct mappings to prevent stretching
+      texture.flipY = false;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.mapping = THREE.EquirectangularReflectionMapping; 
+      texture.needsUpdate = true;
+
+      clonedScene.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          if (mesh.material) {
+            // Apply texture to the material
+            const newMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+            newMat.map = texture;
+            newMat.needsUpdate = true;
+            mesh.material = newMat;
+          }
+        }
+      });
+    });
+
+  }, [garmentUrl, clonedScene]);
 
   return (
-    <group ref={groupRef} position={[0, -1.2, 0]}>
-      {/* Head */}
-      <mesh position={[0, 1.65, 0]}>
-        <sphereGeometry args={[0.18, 32, 32]} />
-        <meshStandardMaterial color={skin} roughness={0.6} />
-      </mesh>
+    <group position={[0, -1.0, 0]}>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[3, 5, 3]} intensity={1} />
+      <directionalLight position={[-2, 3, -1]} intensity={0.3} />
+      
+      {/* 3D Model */}
+      <primitive object={clonedScene} scale={1.2} />
 
-      {/* Neck */}
-      <mesh position={[0, 1.42, 0]}>
-        <cylinderGeometry args={[0.06, 0.07, 0.1, 16]} />
-        <meshStandardMaterial color={skin} roughness={0.6} />
-      </mesh>
-
-      {/* Torso */}
-      <mesh position={[0, 1.1, 0]}>
-        <capsuleGeometry args={[0.22, 0.4, 16, 16]} />
-        <meshStandardMaterial color={shirt} roughness={0.7} />
-      </mesh>
-
-      {/* Left Shoulder */}
-      <mesh position={[-0.32, 1.3, 0]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshStandardMaterial color={shirt} roughness={0.7} />
-      </mesh>
-
-      {/* Right Shoulder */}
-      <mesh position={[0.32, 1.3, 0]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshStandardMaterial color={shirt} roughness={0.7} />
-      </mesh>
-
-      {/* Left Upper Arm */}
-      <mesh position={[-0.35, 1.1, 0]} rotation={[0, 0, 0.15]}>
-        <capsuleGeometry args={[0.06, 0.28, 8, 16]} />
-        <meshStandardMaterial color={shirt} roughness={0.7} />
-      </mesh>
-
-      {/* Right Upper Arm */}
-      <mesh position={[0.35, 1.1, 0]} rotation={[0, 0, -0.15]}>
-        <capsuleGeometry args={[0.06, 0.28, 8, 16]} />
-        <meshStandardMaterial color={shirt} roughness={0.7} />
-      </mesh>
-
-      {/* Left Forearm */}
-      <mesh position={[-0.4, 0.82, 0]} rotation={[0, 0, 0.1]}>
-        <capsuleGeometry args={[0.05, 0.25, 8, 16]} />
-        <meshStandardMaterial color={skin} roughness={0.6} />
-      </mesh>
-
-      {/* Right Forearm */}
-      <mesh position={[0.4, 0.82, 0]} rotation={[0, 0, -0.1]}>
-        <capsuleGeometry args={[0.05, 0.25, 8, 16]} />
-        <meshStandardMaterial color={skin} roughness={0.6} />
-      </mesh>
-
-      {/* Hips / Waist */}
-      <mesh position={[0, 0.72, 0]}>
-        <capsuleGeometry args={[0.2, 0.15, 16, 16]} />
-        <meshStandardMaterial color={pants} roughness={0.7} />
-      </mesh>
-
-      {/* Left Thigh */}
-      <mesh position={[-0.12, 0.45, 0]}>
-        <capsuleGeometry args={[0.09, 0.3, 8, 16]} />
-        <meshStandardMaterial color={pants} roughness={0.7} />
-      </mesh>
-
-      {/* Right Thigh */}
-      <mesh position={[0.12, 0.45, 0]}>
-        <capsuleGeometry args={[0.09, 0.3, 8, 16]} />
-        <meshStandardMaterial color={pants} roughness={0.7} />
-      </mesh>
-
-      {/* Left Shin */}
-      <mesh position={[-0.12, 0.12, 0]}>
-        <capsuleGeometry args={[0.07, 0.3, 8, 16]} />
-        <meshStandardMaterial color={pants} roughness={0.7} />
-      </mesh>
-
-      {/* Right Shin */}
-      <mesh position={[0.12, 0.12, 0]}>
-        <capsuleGeometry args={[0.07, 0.3, 8, 16]} />
-        <meshStandardMaterial color={pants} roughness={0.7} />
-      </mesh>
-
-      {/* Left Foot */}
-      <mesh position={[-0.12, -0.08, 0.04]}>
-        <boxGeometry args={[0.1, 0.06, 0.18]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.8} />
-      </mesh>
-
-      {/* Right Foot */}
-      <mesh position={[0.12, -0.08, 0.04]}>
-        <boxGeometry args={[0.1, 0.06, 0.18]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.8} />
-      </mesh>
+      {/* Shadows */}
+      <ContactShadows position={[0, 0, 0]} opacity={0.6} scale={10} blur={2} far={10} resolution={512} />
+      <Environment preset="city" />
+      
+      <OrbitControls
+        ref={controlsRef}
+        enableDamping={true}
+        autoRotate={autoRotate}
+        autoRotateSpeed={2.0}
+        minPolarAngle={Math.PI / 4}
+        maxPolarAngle={Math.PI / 1.5}
+        enableZoom={true}
+        enablePan={false}
+      />
     </group>
   );
 }
 
-interface Avatar3DProps {
-  skinColor?: string;
-  shirtColor?: string;
-  pantsColor?: string;
-  className?: string;
-}
+export const Avatar3DContainer = forwardRef<Avatar3DRef, Avatar3DProps>(
+  ({ garmentUrl, autoRotate = false }, ref) => {
+    const controlsRef = useRef<any>(null);
 
-export function Avatar3D({
-  skinColor = "#c68642",
-  shirtColor = "#4a90d9",
-  pantsColor = "#2c3e50",
-  className = "",
-}: Avatar3DProps) {
-  return (
-    <div className={`w-full aspect-[3/4] ${className}`}>
-      <Canvas
-        camera={{ position: [0, 0.3, 2.8], fov: 35 }}
-        gl={{ antialias: true, alpha: true }}
-        style={{ background: "transparent" }}
-      >
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[3, 5, 3]} intensity={1} />
-        <directionalLight position={[-2, 3, -1]} intensity={0.3} />
-        <Mannequin
-          skinColor={skinColor}
-          shirtColor={shirtColor}
-          pantsColor={pantsColor}
-        />
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          minPolarAngle={Math.PI / 3}
-          maxPolarAngle={Math.PI / 1.8}
-        />
-        <Environment preset="studio" />
-      </Canvas>
-    </div>
-  );
-}
+    useImperativeHandle(ref, () => ({
+      zoomIn: () => {
+        if (controlsRef.current && controlsRef.current.object) {
+          const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+          camera.position.multiplyScalar(0.85);
+          controlsRef.current.update();
+        }
+      },
+      zoomOut: () => {
+        if (controlsRef.current && controlsRef.current.object) {
+          const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+          camera.position.multiplyScalar(1.15);
+          controlsRef.current.update();
+        }
+      },
+      resetView: () => {
+        if (controlsRef.current && controlsRef.current.object) {
+          const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+          camera.position.set(0, 0.3, 2.8);
+          controlsRef.current.update();
+        }
+      }
+    }));
+
+    // Preload the specific GLTF to prevent stuttering
+    useGLTF.preload("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avatar/glTF-Binary/Avatar.glb");
+
+    return (
+      <div className="w-full h-full relative group">
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Canvas
+              camera={{ position: [0, 0.3, 2.8], fov: 45 }}
+              gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+              style={{ background: "transparent" }}
+            >
+              <Scene garmentUrl={garmentUrl} autoRotate={autoRotate} controlsRef={controlsRef} />
+            </Canvas>
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    );
+  }
+);

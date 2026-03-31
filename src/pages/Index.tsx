@@ -1,223 +1,140 @@
-import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shirt, User, Zap, RotateCcw } from "lucide-react";
-import { ModelGallery } from "@/components/ModelGallery";
+import { useState, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Zap, Shirt, RotateCw, ZoomIn, ZoomOut, RotateCcw, Box } from "lucide-react";
 import { UploadZone } from "@/components/UploadZone";
-import { ScannerOverlay } from "@/components/ScannerOverlay";
-import { ResultViewer } from "@/components/ResultViewer";
-import { startTryOn, fileToDataUrl, VtonStatus } from "@/lib/vton-api";
-import { toast } from "sonner";
-
-type Category = "upper_body" | "lower_body" | "dresses";
-
-const categories: { value: Category; label: string }[] = [
-  { value: "upper_body", label: "Upper Body" },
-  { value: "lower_body", label: "Lower Body" },
-  { value: "dresses", label: "Dress" },
-];
+import { fileToDataUrl } from "@/lib/vton-api";
+import { Avatar3DContainer, Avatar3DRef } from "@/components/Avatar3D";
 
 export default function Index() {
-  const [personImg, setPersonImg] = useState<string | null>(null);
   const [garmentImg, setGarmentImg] = useState<string | null>(null);
-  const [selectedModelSrc, setSelectedModelSrc] = useState<string | null>(null);
-  const [category, setCategory] = useState<Category>("upper_body");
-  const [status, setStatus] = useState<VtonStatus | null>(null);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
-
-  const assetUrlToDataUrl = useCallback(async (url: string) => {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Failed to load the selected model image.");
-    }
-
-    const blob = await response.blob();
-    const file = new File([blob], "model-image", { type: blob.type || "image/jpeg" });
-    return fileToDataUrl(file);
-  }, []);
-
-  const handlePersonFile = useCallback(async (file: File) => {
-    const url = await fileToDataUrl(file);
-    setSelectedModelSrc(null);
-    setPersonImg(url);
-  }, []);
-
-  const handleSelectModel = useCallback(
-    async (src: string) => {
-      try {
-        const url = await assetUrlToDataUrl(src);
-        setSelectedModelSrc(src);
-        setPersonImg(url);
-      } catch (error) {
-        console.error("Failed to load model image:", error);
-        toast.error("Failed to load the selected model image.");
-      }
-    },
-    [assetUrlToDataUrl],
-  );
+  const [autoRotate, setAutoRotate] = useState<boolean>(true);
+  const avatarRef = useRef<Avatar3DRef>(null);
 
   const handleGarmentFile = useCallback(async (file: File) => {
     const url = await fileToDataUrl(file);
     setGarmentImg(url);
   }, []);
 
-  const handleGenerate = async () => {
-    if (!personImg || !garmentImg) {
-      toast.error("Please select a person and upload a garment image.");
-      return;
-    }
-
-    setStatus("starting");
-    setResultUrl(null);
-
-    try {
-      setStatus("processing");
-      const result = await startTryOn(personImg, garmentImg, category);
-
-      if (result.status === "succeeded" && result.output) {
-        const output = Array.isArray(result.output) ? result.output[0] : result.output;
-        setResultUrl(output);
-        setStatus(null);
-        toast.success("Try-on complete!");
-      } else if (result.error) {
-        setStatus(null);
-        toast.error(result.error);
-      } else {
-        setStatus(null);
-        toast.error("No image was generated. Try different photos.");
-      }
-    } catch (err: any) {
-      setStatus(null);
-      toast.error(err.message || "Something went wrong.");
-    }
-  };
-
   const handleReset = () => {
-    setPersonImg(null);
     setGarmentImg(null);
-    setSelectedModelSrc(null);
-    setResultUrl(null);
-    setStatus(null);
+    setAutoRotate(true);
+    avatarRef.current?.resetView();
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b border-border/50">
-        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b border-border/50 sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+        <div className="container max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Zap size={16} className="text-primary" />
             </div>
             <h1 className="font-display font-bold text-lg text-foreground">
-              VisionFit <span className="text-primary">Pro</span>
+              VisionFit <span className="text-primary">360</span>
             </h1>
           </div>
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md glass glass-hover text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <RotateCcw size={14} />
-            Reset
-          </button>
         </div>
       </header>
 
-      <main className="container max-w-6xl mx-auto px-4 py-8">
-        <AnimatePresence>
-          {status && <ScannerOverlay status={status} />}
-        </AnimatePresence>
+      <main className="container max-w-7xl mx-auto px-4 py-8 flex-1 flex flex-col md:flex-row gap-8">
+        
+        {/* Left Sidebar - Controls */}
+        <motion.aside 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="w-full md:w-80 space-y-6 flex-shrink-0"
+        >
+          <div className="space-y-2">
+            <h2 className="font-display text-2xl font-bold text-foreground">Controls</h2>
+            <p className="text-sm text-muted-foreground">Adjust camera and try on new textures in real-time.</p>
+          </div>
 
-        {resultUrl && personImg ? (
-          <ResultViewer
-            resultUrl={resultUrl}
-            personImg={personImg}
-            onClose={() => setResultUrl(null)}
-          />
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-          >
-            {/* Hero */}
-            <div className="text-center space-y-2">
-              <h2 className="font-display text-3xl sm:text-4xl font-bold text-gradient">
-                Virtual Try-On Studio
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Select a model or upload your photo, add a garment, and see the magic.
-              </p>
+          <div className="space-y-6 bg-card p-5 rounded-xl border border-border shadow-sm">
+            {/* Texture Upload */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Shirt size={14} /> Garment Pattern
+              </h3>
+              <UploadZone
+                label="Garment image to wrap"
+                icon={<Shirt size={14} />}
+                preview={garmentImg}
+                onFile={handleGarmentFile}
+                onClear={() => setGarmentImg(null)}
+              />
             </div>
 
-            {/* Dual zone layout */}
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Left: Person */}
-              <div className="space-y-6">
-                <UploadZone
-                  label="Upload Your Photo"
-                  icon={<User size={14} />}
-                  preview={personImg}
-                  onFile={handlePersonFile}
-                  onClear={() => setPersonImg(null)}
-                />
-                <div className="relative">
-                  <div className="absolute inset-x-0 top-0 h-px bg-border" />
-                  <p className="relative text-center text-xs text-muted-foreground bg-background px-3 -top-2 mx-auto w-fit">
-                    or select a model
-                  </p>
-                </div>
-                <ModelGallery selected={selectedModelSrc} onSelect={handleSelectModel} />
-              </div>
+            <hr className="border-border" />
 
-              {/* Right: Garment */}
-              <div className="space-y-6">
-                <UploadZone
-                  label="Garment Image"
-                  icon={<Shirt size={14} />}
-                  preview={garmentImg}
-                  onFile={handleGarmentFile}
-                  onClear={() => setGarmentImg(null)}
-                />
-
-                {/* Category selector */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-                    Category
-                  </h3>
-                  <div className="flex gap-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.value}
-                        onClick={() => setCategory(cat.value)}
-                        className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all ${
-                          category === cat.value
-                            ? "bg-primary text-primary-foreground"
-                            : "glass glass-hover text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Generate button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleGenerate}
-                  disabled={!personImg || !garmentImg || !!status}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-display font-semibold text-sm tracking-wide disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity glow-primary"
+            {/* Camera Settings */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Box size={14} /> Camera Settings
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setAutoRotate(!autoRotate)}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                    autoRotate 
+                      ? "bg-primary text-primary-foreground shadow-md" 
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
                 >
-                  <span className="flex items-center justify-center gap-2">
-                    <Zap size={16} />
-                    Generate Try-On
-                  </span>
-                </motion.button>
+                  <RotateCw size={16} className={autoRotate ? "animate-spin-slow" : ""} />
+                  Auto-Rotate
+                </button>
+
+                <button
+                  onClick={() => avatarRef.current?.resetView()}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors"
+                >
+                  <RotateCcw size={16} />
+                  Reset View
+                </button>
+
+                <button
+                  onClick={() => avatarRef.current?.zoomIn()}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors"
+                >
+                  <ZoomIn size={16} />
+                  Zoom In
+                </button>
+
+                <button
+                  onClick={() => avatarRef.current?.zoomOut()}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium transition-colors"
+                >
+                  <ZoomOut size={16} />
+                  Zoom Out
+                </button>
               </div>
             </div>
-          </motion.div>
-        )}
+            
+            <hr className="border-border" />
+
+            <button
+              onClick={handleReset}
+              className="w-full py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+            >
+              Clear All Selections
+            </button>
+          </div>
+        </motion.aside>
+
+        {/* Right Main Area - Canvas */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex-1 min-h-[500px] md:min-h-0 relative rounded-xl border border-border overflow-hidden bg-gradient-to-b from-card to-background shadow-lg"
+        >
+          <Avatar3DContainer 
+            ref={avatarRef} 
+            garmentUrl={garmentImg} 
+            autoRotate={autoRotate} 
+          />
+        </motion.div>
       </main>
     </div>
   );
