@@ -1,7 +1,6 @@
 export async function removeWhiteBackground(dataUrl: string, threshold: number = 230): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "Anonymous";
     
     img.onload = () => {
       const canvas = document.createElement("canvas");
@@ -29,8 +28,20 @@ export async function removeWhiteBackground(dataUrl: string, threshold: number =
           const max = Math.max(r, g, b);
           const min = Math.min(r, g, b);
 
+          const pixelIndex = i / 4;
+          const x = pixelIndex % canvas.width;
+          const y = Math.floor(pixelIndex / canvas.width);
+
+          // 1. Remove white/grey backgrounds
           if (r > 180 && g > 180 && b > 180 && (max - min) < 35) {
-            data[i + 3] = 0; // Set alpha to 0 (transparent)
+            data[i + 3] = 0; 
+          }
+          
+          // 2. Remove black/dark borders from screenshots (only near the edges)
+          if (r < 40 && g < 40 && b < 40 && (max - min) < 20) {
+            if (x < 15 || y < 15 || x > canvas.width - 15 || y > canvas.height - 15) {
+              data[i + 3] = 0;
+            }
           }
         }
 
