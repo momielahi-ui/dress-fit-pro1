@@ -4,7 +4,7 @@ import { Zap, Shirt, RotateCw, ZoomIn, ZoomOut, RotateCcw, Box, SlidersHorizonta
 import { UploadZone } from "@/components/UploadZone";
 import { fileToDataUrl } from "@/lib/vton-api";
 import { Avatar3DContainer, Avatar3DRef } from "@/components/Avatar3D";
-import { Studio2D } from "@/components/Studio2D";
+import { SmartStudio2D } from "@/components/SmartStudio2D";
 import { removeWhiteBackground } from "@/lib/image-processing";
 
 const MODELS_2D = [
@@ -291,7 +291,7 @@ export default function Index() {
           className="flex-1 min-h-[500px] md:min-h-0 relative rounded-xl border border-border/50 overflow-hidden bg-gradient-to-b from-card to-background shadow-2xl"
         >
           {mode === "2D" ? (
-            <Studio2D 
+            <SmartStudio2D 
               modelUrl={selectedModel} 
               garmentUrl={frontGarmentUrl} 
               scale={overlayScale} 
