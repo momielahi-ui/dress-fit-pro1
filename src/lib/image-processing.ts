@@ -24,8 +24,12 @@ export async function removeWhiteBackground(dataUrl: string, threshold: number =
           const g = data[i + 1];
           const b = data[i + 2];
 
-          // Check if pixel is light/white
-          if (r > threshold && g > threshold && b > threshold) {
+          // Check if pixel is light/white/grey
+          // It must be bright (all > 180) and relatively desaturated/colorless (max - min < 35)
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+
+          if (r > 180 && g > 180 && b > 180 && (max - min) < 35) {
             data[i + 3] = 0; // Set alpha to 0 (transparent)
           }
         }
