@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
+    --background: 0 0% 3%;
     --foreground: 0 0% 95%;
 
     --card: 0 0% 7%;
@@ -15,7 +15,7 @@
     --popover: 0 0% 7%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 168 80% 50%;
+    --primary: 158 64% 52%;
     --primary-foreground: 0 0% 2%;
 
     --secondary: 0 0% 12%;
@@ -24,7 +24,7 @@
     --muted: 0 0% 12%;
     --muted-foreground: 0 0% 55%;
 
-    --accent: 168 80% 50%;
+    --accent: 158 64% 52%;
     --accent-foreground: 0 0% 2%;
 
     --destructive: 0 72% 51%;
@@ -32,14 +32,14 @@
 
     --border: 0 0% 14%;
     --input: 0 0% 14%;
-    --ring: 168 80% 50%;
+    --ring: 158 64% 52%;
 
     --radius: 0.75rem;
 
     --glass-bg: 0 0% 100% / 0.04;
     --glass-border: 0 0% 100% / 0.08;
     --glass-hover: 0 0% 100% / 0.08;
-    --scanner-glow: 168 80% 50%;
+    --scanner-glow: 158 64% 52%;
   }
 }
 

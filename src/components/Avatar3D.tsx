@@ -6,7 +6,8 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
 interface Avatar3DProps {
-  garmentUrl?: string | null;
+  frontGarmentUrl?: string | null;
+  backGarmentUrl?: string | null;
   autoRotate?: boolean;
 }
 
@@ -25,7 +26,7 @@ function LoadingSpinner() {
   );
 }
 
-function Scene({ garmentUrl, autoRotate, controlsRef }: { garmentUrl?: string | null, autoRotate: boolean, controlsRef: any }) {
+function Scene({ frontGarmentUrl, backGarmentUrl, autoRotate, controlsRef }: { frontGarmentUrl?: string | null, backGarmentUrl?: string | null, autoRotate: boolean, controlsRef: any }) {
   // Use a CORS friendly URL for the Avatar
   const { scene } = useGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb");
   
@@ -33,10 +34,10 @@ function Scene({ garmentUrl, autoRotate, controlsRef }: { garmentUrl?: string | 
   const clonedScene = scene.clone();
 
   useEffect(() => {
-    if (!garmentUrl || !clonedScene) return;
+    if (!frontGarmentUrl || !clonedScene) return;
 
     const loader = new THREE.TextureLoader();
-    loader.load(garmentUrl, (texture) => {
+    loader.load(frontGarmentUrl, (texture) => {
       // Setup correct mappings to prevent stretching
       texture.flipY = false;
       texture.wrapS = THREE.RepeatWrapping;
@@ -58,7 +59,7 @@ function Scene({ garmentUrl, autoRotate, controlsRef }: { garmentUrl?: string | 
       });
     });
 
-  }, [garmentUrl, clonedScene]);
+  }, [frontGarmentUrl, backGarmentUrl, clonedScene]);
 
   return (
     <group position={[0, -1.0, 0]}>
@@ -88,7 +89,7 @@ function Scene({ garmentUrl, autoRotate, controlsRef }: { garmentUrl?: string | 
 }
 
 export const Avatar3DContainer = forwardRef<Avatar3DRef, Avatar3DProps>(
-  ({ garmentUrl, autoRotate = false }, ref) => {
+  ({ frontGarmentUrl, backGarmentUrl, autoRotate = false }, ref) => {
     const controlsRef = useRef<any>(null);
 
     useImperativeHandle(ref, () => ({
@@ -127,7 +128,7 @@ export const Avatar3DContainer = forwardRef<Avatar3DRef, Avatar3DProps>(
               gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
               style={{ background: "transparent" }}
             >
-              <Scene garmentUrl={garmentUrl} autoRotate={autoRotate} controlsRef={controlsRef} />
+              <Scene frontGarmentUrl={frontGarmentUrl} backGarmentUrl={backGarmentUrl} autoRotate={autoRotate} controlsRef={controlsRef} />
             </Canvas>
           </Suspense>
         </ErrorBoundary>
