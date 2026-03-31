@@ -36,7 +36,7 @@ export function Studio2D({ modelUrl, garmentUrl, scale, posX, posY }: Studio2DPr
           <img 
             src={garmentUrl} 
             alt="Garment Overlay" 
-            className="absolute z-10 origin-center opacity-95 pointer-events-none drop-shadow-xl"
+            className="absolute z-10 origin-center opacity-95 pointer-events-none drop-shadow-xl mix-blend-multiply"
             style={{
               top: '50%',
               left: '50%',
