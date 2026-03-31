@@ -5,6 +5,7 @@ import { UploadZone } from "@/components/UploadZone";
 import { fileToDataUrl } from "@/lib/vton-api";
 import { Avatar3DContainer, Avatar3DRef } from "@/components/Avatar3D";
 import { Studio2D } from "@/components/Studio2D";
+import { removeWhiteBackground } from "@/lib/image-processing";
 
 const MODELS_2D = [
   { id: "male_athletic", label: "Male Athletic", url: "/models/male_athletic.png" },
@@ -27,12 +28,14 @@ export default function Index() {
   // 2D State
   const [selectedModel, setSelectedModel] = useState<string | null>(MODELS_2D[0].url);
   const [overlayScale, setOverlayScale] = useState<number>(1);
+  const [overlayWidthWarp, setOverlayWidthWarp] = useState<number>(1);
   const [overlayPosX, setOverlayPosX] = useState<number>(0);
   const [overlayPosY, setOverlayPosY] = useState<number>(0);
 
   const handleFrontGarmentFile = useCallback(async (file: File) => {
-    const url = await fileToDataUrl(file);
-    setFrontGarmentUrl(url);
+    const rawUrl = await fileToDataUrl(file);
+    const processedUrl = await removeWhiteBackground(rawUrl);
+    setFrontGarmentUrl(processedUrl);
   }, []);
 
   const handleBackGarmentFile = useCallback(async (file: File) => {
@@ -48,6 +51,7 @@ export default function Index() {
       avatarRef.current?.resetView();
     } else {
       setOverlayScale(1);
+      setOverlayWidthWarp(1);
       setOverlayPosX(0);
       setOverlayPosY(0);
     }
@@ -188,6 +192,18 @@ export default function Index() {
                 </div>
                 <div className="space-y-3">
                   <label className="text-xs font-medium flex justify-between">
+                    <span className="text-muted-foreground">Width Warp (Stretch)</span>
+                    <span>{overlayWidthWarp.toFixed(2)}x</span>
+                  </label>
+                  <input 
+                    type="range" min="0.5" max="2" step="0.05" 
+                    value={overlayWidthWarp} 
+                    onChange={(e) => setOverlayWidthWarp(parseFloat(e.target.value))}
+                    className="w-full accent-primary" 
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-xs font-medium flex justify-between">
                     <span className="text-muted-foreground">Adjust Position X</span>
                   </label>
                   <input 
@@ -279,6 +295,7 @@ export default function Index() {
               modelUrl={selectedModel} 
               garmentUrl={frontGarmentUrl} 
               scale={overlayScale} 
+              widthWarp={overlayWidthWarp}
               posX={overlayPosX} 
               posY={overlayPosY} 
             />

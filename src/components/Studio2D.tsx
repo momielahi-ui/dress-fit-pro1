@@ -4,11 +4,12 @@ interface Studio2DProps {
   modelUrl: string | null;
   garmentUrl: string | null;
   scale: number;
+  widthWarp: number;
   posX: number;
   posY: number;
 }
 
-export function Studio2D({ modelUrl, garmentUrl, scale, posX, posY }: Studio2DProps) {
+export function Studio2D({ modelUrl, garmentUrl, scale, widthWarp, posX, posY }: Studio2DProps) {
   if (!modelUrl) {
     return (
       <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center bg-muted/10 border border-dashed border-border rounded-xl p-8 text-center">
@@ -40,7 +41,7 @@ export function Studio2D({ modelUrl, garmentUrl, scale, posX, posY }: Studio2DPr
             style={{
               top: '50%',
               left: '50%',
-              transform: `translate(calc(-50% + ${posX}px), calc(-50% + ${posY}px)) scale(${scale})`,
+              transform: `translate(calc(-50% + ${posX}px), calc(-50% + ${posY}px)) scaleX(${scale * widthWarp}) scaleY(${scale})`,
               width: '300px' // Base width, scalable via slider
             }}
             draggable="false"
