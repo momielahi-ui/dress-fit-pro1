@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     console.log("Calling Hugging Face IDM-VTON API...");
-    const response = await fetch("https://api-inference.huggingface.co/models/yisol/IDM-VTON", {
+    const response = await fetch("https://router.huggingface.co/models/yisol/IDM-VTON", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${HF_TOKEN}`,
